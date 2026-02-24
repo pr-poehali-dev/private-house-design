@@ -303,61 +303,126 @@ export default function Index() {
                   </div>
                 </div>
 
-                {/* Схема фундамента — визуализация */}
+                {/* Схема фундамента — точная сетка 9×7 */}
                 <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-5">
-                  <h2 className="font-montserrat font-bold text-white mb-4 text-sm">Схема расположения свай</h2>
-                  <div className="relative bg-[#0a0a10] rounded-xl border border-white/10 overflow-hidden" style={{ height: 260 }}>
-                    {/* Сетка */}
-                    <div className="absolute inset-0 opacity-5" style={{
-                      backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-                      backgroundSize: "20px 20px"
-                    }} />
-                    {/* Периметр фундамента */}
-                    <svg width="100%" height="100%" viewBox="0 0 640 260" className="absolute inset-0">
-                      {/* Фундамент */}
-                      <rect x="60" y="30" width="520" height="200" fill="none" stroke="rgba(139,92,246,0.4)" strokeWidth="2" strokeDasharray="6,3" rx="2"/>
-                      {/* Размеры */}
-                      <text x="320" y="18" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11" fontFamily="Golos Text">16 000 мм</text>
-                      <text x="28" y="135" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11" fontFamily="Golos Text" transform="rotate(-90,28,135)">12 200 мм</text>
-                      {/* Периметральные сваи по углам и краям */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-montserrat font-bold text-white text-sm">Схема расположения свай · Вид сверху</h2>
+                    <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/10">9 × 7 = 63 сваи</span>
+                  </div>
+
+                  <div className="relative bg-[#07070d] rounded-xl border border-white/10 overflow-hidden">
+                    <svg
+                      width="100%"
+                      viewBox="-80 -55 16240 12390"
+                      className="block"
+                      style={{ maxHeight: 420 }}
+                    >
+                      {/* Заливка фундамента */}
+                      <rect x="0" y="0" width="16000" height="12200" fill="rgba(56,189,248,0.05)" stroke="none"/>
+
+                      {/* Прогоны по X (горизонтальные брусы) — 7 строк */}
+                      {[0, 2000, 4000, 6100, 8100, 10200, 12200].map((y) => (
+                        <line key={`hb-${y}`} x1="0" y1={y} x2="16000" y2={y}
+                          stroke="rgba(56,189,248,0.55)" strokeWidth="90"/>
+                      ))}
+
+                      {/* Прогоны по Y (вертикальные брусы) — 9 колонн */}
+                      {[0, 1900, 3900, 5900, 7900, 9900, 11900, 13900, 16000].map((x) => (
+                        <line key={`vb-${x}`} x1={x} y1="0" x2={x} y2="12200"
+                          stroke="rgba(56,189,248,0.55)" strokeWidth="90"/>
+                      ))}
+
+                      {/* Периметр */}
+                      <rect x="0" y="0" width="16000" height="12200"
+                        fill="none" stroke="rgba(139,92,246,0.7)" strokeWidth="120"/>
+
+                      {/* Сваи 9×7 */}
+                      {[0, 1900, 3900, 5900, 7900, 9900, 11900, 13900, 16000].map((x) =>
+                        [0, 2000, 4000, 6100, 8100, 10200, 12200].map((y) => (
+                          <g key={`p-${x}-${y}`}>
+                            <circle cx={x} cy={y} r="340" fill="rgba(251,191,36,0.15)" stroke="rgba(251,191,36,0.4)" strokeWidth="60"/>
+                            <circle cx={x} cy={y} r="180" fill="rgba(251,191,36,0.9)" stroke="none"/>
+                            <circle cx={x} cy={y} r="70" fill="white" opacity="0.9"/>
+                          </g>
+                        ))
+                      )}
+
+                      {/* === РАЗМЕРЫ ПО X (сверху) === */}
+                      {/* Общий габарит 16000 */}
+                      <line x1="0" y1="-400" x2="16000" y2="-400" stroke="rgba(255,255,255,0.3)" strokeWidth="25"/>
+                      <line x1="0" y1="-500" x2="0" y2="-300" stroke="rgba(255,255,255,0.3)" strokeWidth="25"/>
+                      <line x1="16000" y1="-500" x2="16000" y2="-300" stroke="rgba(255,255,255,0.3)" strokeWidth="25"/>
+                      <text x="8000" y="-200" textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="380" fontFamily="Golos Text, sans-serif" fontWeight="600">16 000 мм</text>
+
+                      {/* Шаги по X: 1900, 2000×7, 1900 */}
                       {[
-                        [60,30],[204,30],[348,30],[492,30],[580,30],
-                        [60,97],[580,97],
-                        [60,163],[580,163],
-                        [60,230],[204,230],[348,230],[492,230],[580,230],
-                        [204,97],[348,97],[492,97],
-                        [204,163],[348,163],[492,163],
-                        [132,30],[276,30],[420,30],[556,30],
-                        [132,230],[276,230],[420,230],[556,230],
-                        [60,64],[60,130],[60,196],
-                        [580,64],[580,130],[580,196],
-                        [132,97],[276,97],[420,97],[556,97],
-                        [132,163],[276,163],[420,163],[556,163],
-                        [132,130],[276,130],[420,130],[556,130],
-                        [204,130],[348,130],[492,130],
-                      ].slice(0, PILE_COUNT).map(([cx, cy], i) => (
-                        <g key={i}>
-                          <circle cx={cx} cy={cy} r="7" fill="rgba(251,191,36,0.9)" stroke="rgba(251,191,36,0.3)" strokeWidth="3"/>
-                          <circle cx={cx} cy={cy} r="3" fill="#fff" opacity="0.9"/>
+                        [0, 1900, "1900"],
+                        [1900, 3900, "2000"],
+                        [3900, 5900, "2000"],
+                        [5900, 7900, "2000"],
+                        [7900, 9900, "2000"],
+                        [9900, 11900, "2000"],
+                        [11900, 13900, "2000"],
+                        [13900, 16000, "1900"],
+                      ].map(([x1, x2, label]) => (
+                        <g key={`dx-${x1}`}>
+                          <line x1={x1} y1="-800" x2={x2} y2="-800" stroke="rgba(255,255,255,0.18)" strokeWidth="20"/>
+                          <line x1={x1} y1="-870" x2={x1} y2="-730" stroke="rgba(255,255,255,0.18)" strokeWidth="20"/>
+                          <line x1={x2} y1="-870" x2={x2} y2="-730" stroke="rgba(255,255,255,0.18)" strokeWidth="20"/>
+                          <text x={(+x1 + +x2) / 2} y="-620" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="270" fontFamily="Golos Text, sans-serif">{label}</text>
                         </g>
                       ))}
-                      {/* Обвязка периметр */}
-                      <rect x="60" y="30" width="520" height="200" fill="none" stroke="rgba(56,189,248,0.6)" strokeWidth="3" rx="2"/>
-                      {/* Прогоны */}
-                      <line x1="60" y1="130" x2="580" y2="130" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
-                      <line x1="204" y1="30" x2="204" y2="230" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
-                      <line x1="348" y1="30" x2="348" y2="230" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
-                      <line x1="492" y1="30" x2="492" y2="230" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
+
+                      {/* === РАЗМЕРЫ ПО Y (слева) === */}
+                      {/* Общий габарит 12200 */}
+                      <line x1="-400" y1="0" x2="-400" y2="12200" stroke="rgba(255,255,255,0.3)" strokeWidth="25"/>
+                      <line x1="-500" y1="0" x2="-300" y2="0" stroke="rgba(255,255,255,0.3)" strokeWidth="25"/>
+                      <line x1="-500" y1="12200" x2="-300" y2="12200" stroke="rgba(255,255,255,0.3)" strokeWidth="25"/>
+                      <text x="-200" y="6100" textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="380" fontFamily="Golos Text, sans-serif" fontWeight="600"
+                        transform="rotate(-90,-200,6100)">12 200 мм</text>
+
+                      {/* Шаги по Y: 2000, 2000, 2100, 2000, 2100, 2000 */}
+                      {[
+                        [0, 2000, "2000"],
+                        [2000, 4000, "2000"],
+                        [4000, 6100, "2100"],
+                        [6100, 8100, "2000"],
+                        [8100, 10200, "2100"],
+                        [10200, 12200, "2000"],
+                      ].map(([y1, y2, label]) => (
+                        <g key={`dy-${y1}`}>
+                          <line x1="-750" y1={y1} x2="-750" y2={y2} stroke="rgba(255,255,255,0.18)" strokeWidth="20"/>
+                          <line x1="-820" y1={y1} x2="-680" y2={y1} stroke="rgba(255,255,255,0.18)" strokeWidth="20"/>
+                          <line x1="-820" y1={y2} x2="-680" y2={y2} stroke="rgba(255,255,255,0.18)" strokeWidth="20"/>
+                          <text x="-580" y={(+y1 + +y2) / 2 + 100} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="270" fontFamily="Golos Text, sans-serif"
+                            transform={`rotate(-90,-580,${(+y1 + +y2) / 2})`}>{label}</text>
+                        </g>
+                      ))}
+
+                      {/* Нумерация свай */}
+                      {[0, 1900, 3900, 5900, 7900, 9900, 11900, 13900, 16000].map((x, ci) =>
+                        [0, 2000, 4000, 6100, 8100, 10200, 12200].map((y, ri) => (
+                          <text key={`n-${x}-${y}`} x={x} y={y + 520} textAnchor="middle"
+                            fill="rgba(255,255,255,0.25)" fontSize="230" fontFamily="Golos Text, sans-serif">
+                            {ri * 9 + ci + 1}
+                          </text>
+                        ))
+                      )}
                     </svg>
+
                     {/* Легенда */}
-                    <div className="absolute bottom-3 right-4 flex items-center gap-4 text-xs text-white/40">
+                    <div className="absolute bottom-3 right-4 flex items-center gap-4 text-xs text-white/40 bg-black/40 backdrop-blur px-3 py-2 rounded-xl border border-white/10">
                       <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 rounded-full bg-amber-400"/>
                         <span>Свая Ø108</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-0.5 bg-sky-400"/>
+                        <div className="w-6 h-1.5 bg-sky-400/70 rounded"/>
                         <span>Брус 200×200</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 border-2 border-violet-400 rounded-sm"/>
+                        <span>Периметр</span>
                       </div>
                     </div>
                   </div>
