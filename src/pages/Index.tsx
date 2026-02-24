@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
-type Tab = "projects" | "foundation" | "drawings" | "calculator";
+type Tab = "projects" | "foundation" | "floor" | "drawings" | "calculator";
 
 interface Project {
   id: number;
@@ -71,6 +71,61 @@ const costBeams = totalBeams * beamPrice;
 const costAntiseptic = totalBeams * antisepticPrice;
 const costFoundTotal = costPiles + costCaps + costAntiCorrosion + costBeams + costAntiseptic;
 
+// ── ПЕРЕКРЫТИЕ ──
+const FLOOR_W = 12200; // мм (совпадает с фундаментом)
+const FLOOR_L = 16000; // мм
+const FLOOR_AREA = (FLOOR_W / 1000) * (FLOOR_L / 1000); // м²
+
+// Балки перекрытия 150×200×6000 мм, шаг 600 мм вдоль ширины
+const JOIST_SECTION = "150×200";
+const JOIST_LEN = 6000; // мм
+const JOIST_STEP = 600; // мм
+const joistCount = Math.ceil((FLOOR_L / JOIST_STEP)) + 1; // вдоль длины
+
+// Лаги 50×150×4000 мм, шаг 400 мм поперёк
+const LAG_SECTION = "50×150";
+const LAG_LEN = 4000; // мм
+const LAG_STEP = 400; // мм
+const lagCount = Math.ceil((FLOOR_W / LAG_STEP)) + 1;
+
+// Настил — доска половая 36×136×4000 мм
+const PLANK_SECTION = "36×136";
+const PLANK_LEN = 4000; // мм
+const planksPerM2 = 1000 / 136; // шт на м.п.
+const plankTotalM2 = FLOOR_AREA;
+const plankCount = Math.ceil(plankTotalM2 * (1000 / 136) * (FLOOR_W / 1000) / (PLANK_LEN / 1000));
+
+// Утеплитель базальт 150мм
+const insulationM2 = Math.ceil(FLOOR_AREA * 1.05);
+
+// Пароизоляция
+const vaporM2 = Math.ceil(FLOOR_AREA * 1.1);
+
+// Цены
+const joistPrice = 1850;       // ₽/шт балка 150×200×6000
+const lagPrice = 480;           // ₽/шт лага 50×150×4000
+const plankPrice = 620;         // ₽/шт доска 36×136×4000
+const insulationPrice = 380;    // ₽/м² утеплитель 150мм
+const vaporPrice = 28;          // ₽/м² пароизоляция
+const antisepticFloorPrice = 85;// ₽/м² антисептик нанесение
+
+const costJoists = joistCount * joistPrice;
+const costLags = lagCount * lagPrice;
+const costPlanks = plankCount * plankPrice;
+const costInsulation = insulationM2 * insulationPrice;
+const costVapor = vaporM2 * vaporPrice;
+const costAntisepticFloor = Math.ceil(FLOOR_AREA) * antisepticFloorPrice;
+const costFloorTotal = costJoists + costLags + costPlanks + costInsulation + costVapor + costAntisepticFloor;
+
+const floorItems = [
+  { label: `Балки ${JOIST_SECTION}×${JOIST_LEN}мм`, qty: `${joistCount} шт`, unitPrice: joistPrice, total: costJoists, icon: "AlignJustify", color: "from-amber-400 to-orange-500" },
+  { label: `Лаги ${LAG_SECTION}×${LAG_LEN}мм`, qty: `${lagCount} шт`, unitPrice: lagPrice, total: costLags, icon: "AlignCenter", color: "from-sky-400 to-blue-500" },
+  { label: `Настил доска ${PLANK_SECTION}`, qty: `${plankCount} шт`, unitPrice: plankPrice, total: costPlanks, icon: "Square", color: "from-emerald-400 to-teal-500" },
+  { label: "Утеплитель базальт 150мм", qty: `${insulationM2} м²`, unitPrice: insulationPrice, total: costInsulation, icon: "Wind", color: "from-violet-500 to-indigo-500" },
+  { label: "Пароизоляция", qty: `${vaporM2} м²`, unitPrice: vaporPrice, total: costVapor, icon: "Layers", color: "from-pink-400 to-rose-500" },
+  { label: "Антисептик (нанесение)", qty: `${Math.ceil(FLOOR_AREA)} м²`, unitPrice: antisepticFloorPrice, total: costAntisepticFloor, icon: "Droplets", color: "from-teal-400 to-cyan-500" },
+];
+
 const foundationItems = [
   { label: "Винтовые сваи Ø108мм", qty: `${PILE_COUNT} шт`, unitPrice: pilePrice, total: costPiles, icon: "Drill", color: "from-amber-400 to-orange-500" },
   { label: "Оголовки на сваи", qty: `${PILE_COUNT} шт`, unitPrice: capPrice, total: costCaps, icon: "Layers", color: "from-sky-400 to-blue-500" },
@@ -112,6 +167,7 @@ export default function Index() {
   const [hasBasement, setHasBasement] = useState(false);
   const [activeProject, setActiveProject] = useState(0);
   const [foundSection, setFoundSection] = useState<"spec" | "estimate">("spec");
+  const [floorSection, setFloorSection] = useState<"spec" | "estimate">("spec");
 
   const totalArea = area * floors + (hasBasement ? area * 0.8 : 0);
   const totalCost = Math.round(
@@ -121,7 +177,8 @@ export default function Index() {
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "projects", label: "Проекты", icon: "FolderOpen" },
     { key: "foundation", label: "Фундамент", icon: "Drill" },
-    { key: "drawings", label: "Чертежи", icon: "Layers" },
+    { key: "floor", label: "Перекрытие", icon: "Layers" },
+    { key: "drawings", label: "Чертежи", icon: "FileText" },
     { key: "calculator", label: "Калькулятор", icon: "Calculator" },
   ];
 
@@ -496,6 +553,290 @@ export default function Index() {
 
                 <div className="flex gap-3">
                   <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-white font-semibold text-sm hover:scale-[1.02] transition-transform shadow-lg shadow-violet-500/25">
+                    <Icon name="Download" size={15} />
+                    Скачать смету PDF
+                  </button>
+                  <button className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white/90 hover:bg-white/10 text-sm transition-all">
+                    <Icon name="Pencil" size={15} />
+                    Редактировать
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── FLOOR ── */}
+        {tab === "floor" && (
+          <div className="animate-fade-in">
+            {/* Hero */}
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/20">
+                    Этап 2 · Планирование
+                  </span>
+                </div>
+                <h1 className="font-montserrat font-black text-3xl sm:text-4xl text-white mb-2">Перекрытие</h1>
+                <p className="text-white/40 text-sm">Балки + лаги + настил + утеплитель · {FLOOR_W/1000}×{FLOOR_L/1000} м = {FLOOR_AREA} м²</p>
+              </div>
+              <div className="hidden sm:flex gap-2">
+                <button className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                  <Icon name="Download" size={14} />
+                  Смета PDF
+                </button>
+              </div>
+            </div>
+
+            {/* KPI */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+              {[
+                { label: "Балки", value: `${joistCount} шт`, sub: `${JOIST_SECTION}×${JOIST_LEN}мм`, icon: "AlignJustify", color: "from-amber-400 to-orange-500" },
+                { label: "Лаги", value: `${lagCount} шт`, sub: `${LAG_SECTION}×${LAG_LEN}мм`, icon: "AlignCenter", color: "from-sky-400 to-blue-500" },
+                { label: "Площадь настила", value: `${FLOOR_AREA} м²`, sub: "Доска 36×136", icon: "Square", color: "from-emerald-400 to-teal-500" },
+                { label: "Итого бюджет", value: `${(costFloorTotal/1000).toFixed(0)} тыс`, sub: "материалы", icon: "Wallet", color: "from-violet-500 to-indigo-600" },
+              ].map((s) => (
+                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg`}>
+                    <Icon name={s.icon} size={16} className="text-white" />
+                  </div>
+                  <div className="font-montserrat font-black text-lg text-white leading-tight">{s.value}</div>
+                  <div className="text-white/35 text-xs mt-0.5">{s.sub}</div>
+                  <div className="text-white/50 text-xs mt-1 font-medium">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Подвкладки */}
+            <div className="flex gap-2 mb-6">
+              {[{ key: "spec", label: "Характеристики" }, { key: "estimate", label: "Смета" }].map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => setFloorSection(s.key as "spec" | "estimate")}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    floorSection === s.key
+                      ? "bg-white/15 text-white border border-white/20"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {floorSection === "spec" && (
+              <div className="grid lg:grid-cols-2 gap-5">
+                {/* Балки */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                      <Icon name="AlignJustify" size={15} className="text-white" />
+                    </div>
+                    <h2 className="font-montserrat font-bold text-white">Балки перекрытия</h2>
+                  </div>
+                  <div className="divide-y divide-white/8">
+                    {[
+                      { label: "Сечение", value: `${JOIST_SECTION} мм` },
+                      { label: "Длина", value: `${JOIST_LEN} мм (6 м)` },
+                      { label: "Шаг укладки", value: `${JOIST_STEP} мм` },
+                      { label: "Количество", value: `${joistCount} шт` },
+                      { label: "Направление", value: "Поперёк ширины (12.2м)" },
+                      { label: "Опирание", value: "На обвязочный брус" },
+                      { label: "Объём", value: `${(0.15 * 0.2 * (JOIST_LEN/1000) * joistCount).toFixed(2)} м³` },
+                    ].map((r) => (
+                      <div key={r.label} className="px-5 py-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                        <span className="text-sm text-white/50">{r.label}</span>
+                        <span className="text-sm font-semibold text-white">{r.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Лаги + настил */}
+                <div className="space-y-5">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center">
+                        <Icon name="AlignCenter" size={15} className="text-white" />
+                      </div>
+                      <h2 className="font-montserrat font-bold text-white">Лаги</h2>
+                    </div>
+                    <div className="divide-y divide-white/8">
+                      {[
+                        { label: "Сечение", value: `${LAG_SECTION} мм` },
+                        { label: "Длина", value: `${LAG_LEN} мм (4 м)` },
+                        { label: "Шаг укладки", value: `${LAG_STEP} мм` },
+                        { label: "Количество", value: `${lagCount} шт` },
+                        { label: "Крепление", value: "Саморезы к балкам" },
+                      ].map((r) => (
+                        <div key={r.label} className="px-5 py-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                          <span className="text-sm text-white/50">{r.label}</span>
+                          <span className="text-sm font-semibold text-white">{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                        <Icon name="Layers" size={15} className="text-white" />
+                      </div>
+                      <h2 className="font-montserrat font-bold text-white">Пирог перекрытия</h2>
+                    </div>
+                    <div className="divide-y divide-white/8">
+                      {[
+                        { layer: "1", name: "Настил — доска 36×136", thick: "36 мм", color: "bg-amber-400" },
+                        { layer: "2", name: "Лаги 50×150", thick: "150 мм", color: "bg-sky-400" },
+                        { layer: "3", name: "Утеплитель базальт", thick: "150 мм", color: "bg-violet-400" },
+                        { layer: "4", name: "Пароизоляция", thick: "0.2 мм", color: "bg-pink-400" },
+                        { layer: "5", name: "Балки 150×200", thick: "200 мм", color: "bg-orange-400" },
+                      ].map((r) => (
+                        <div key={r.layer} className="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors">
+                          <div className={`w-2.5 h-2.5 rounded-full ${r.color} shrink-0`}/>
+                          <span className="text-sm text-white flex-1">{r.name}</span>
+                          <span className="text-sm font-semibold text-white/60">{r.thick}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Схема перекрытия */}
+                <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-montserrat font-bold text-white text-sm">Схема перекрытия · Вид сверху</h2>
+                    <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                      Шаг балок {JOIST_STEP}мм · Шаг лаг {LAG_STEP}мм
+                    </span>
+                  </div>
+                  <div className="relative bg-[#07070d] rounded-xl border border-white/10 overflow-hidden">
+                    <svg width="100%" viewBox="-60 -60 16120 12320" style={{ maxHeight: 380 }}>
+                      {/* Фон */}
+                      <rect x="0" y="0" width="16000" height="12200" fill="rgba(16,16,32,0.8)" stroke="none"/>
+
+                      {/* Балки — вертикальные полосы шаг 600мм */}
+                      {Array.from({ length: joistCount }, (_, i) => {
+                        const x = Math.min(i * JOIST_STEP, FLOOR_L);
+                        return (
+                          <rect key={`j-${i}`} x={x - 75} y="0" width="150" height="12200"
+                            fill="rgba(251,191,36,0.35)" stroke="rgba(251,191,36,0.6)" strokeWidth="20"/>
+                        );
+                      })}
+
+                      {/* Лаги — горизонтальные полосы шаг 400мм */}
+                      {Array.from({ length: lagCount }, (_, i) => {
+                        const y = Math.min(i * LAG_STEP, FLOOR_W);
+                        return (
+                          <rect key={`l-${i}`} x="0" y={y - 25} width="16000" height="50"
+                            fill="rgba(56,189,248,0.5)" stroke="rgba(56,189,248,0.8)" strokeWidth="15"/>
+                        );
+                      })}
+
+                      {/* Периметр */}
+                      <rect x="0" y="0" width="16000" height="12200"
+                        fill="none" stroke="rgba(139,92,246,0.8)" strokeWidth="100"/>
+
+                      {/* Размерная линия X */}
+                      <line x1="0" y1="-30" x2="16000" y2="-30" stroke="rgba(255,255,255,0.3)" strokeWidth="20"/>
+                      <text x="8000" y="-45" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="350" fontFamily="Golos Text, sans-serif" fontWeight="600">16 000 мм</text>
+
+                      {/* Размерная линия Y */}
+                      <line x1="-30" y1="0" x2="-30" y2="12200" stroke="rgba(255,255,255,0.3)" strokeWidth="20"/>
+                      <text x="-50" y="6100" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="350" fontFamily="Golos Text, sans-serif" fontWeight="600"
+                        transform="rotate(-90,-50,6100)">12 200 мм</text>
+
+                      {/* Подписи шага */}
+                      <text x="300" y="700" fill="rgba(251,191,36,0.7)" fontSize="280" fontFamily="Golos Text, sans-serif">↕ 600мм</text>
+                      <text x="14000" y="1200" fill="rgba(56,189,248,0.7)" fontSize="280" fontFamily="Golos Text, sans-serif" textAnchor="end">→ 400мм</text>
+                    </svg>
+
+                    {/* Легенда */}
+                    <div className="absolute bottom-3 right-4 flex items-center gap-4 text-xs text-white/40 bg-black/40 backdrop-blur px-3 py-2 rounded-xl border border-white/10">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-3 bg-amber-400/60 rounded-sm"/>
+                        <span>Балка 150×200</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-1.5 bg-sky-400/70 rounded"/>
+                        <span>Лага 50×150</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 border-2 border-violet-400 rounded-sm"/>
+                        <span>Периметр</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {floorSection === "estimate" && (
+              <div className="space-y-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10">
+                    <h2 className="font-montserrat font-bold text-white">Сводная смета · Перекрытие</h2>
+                  </div>
+                  <div className="divide-y divide-white/8">
+                    {floorItems.map((item) => (
+                      <div key={item.label} className="px-5 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 shadow-md`}>
+                          <Icon name={item.icon} size={15} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white">{item.label}</div>
+                          <div className="text-xs text-white/40 mt-0.5">
+                            {item.qty} · {item.unitPrice.toLocaleString("ru-RU")} ₽/шт
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="font-montserrat font-bold text-white">
+                            {(item.total / 1000).toFixed(1)} тыс. ₽
+                          </div>
+                          <div className="text-xs text-white/30 mt-0.5">
+                            {Math.round(item.total / costFloorTotal * 100)}%
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-5 py-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/5 border-t border-emerald-500/20 flex items-center justify-between">
+                    <div>
+                      <div className="font-montserrat font-black text-white text-lg">ИТОГО</div>
+                      <div className="text-xs text-white/40 mt-0.5">Все материалы</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-montserrat font-black text-2xl text-white">
+                        {(costFloorTotal / 1000).toFixed(0)} <span className="text-base text-white/50">тыс. ₽</span>
+                      </div>
+                      <div className="text-xs text-white/30 mt-0.5">≈ {(costFloorTotal / FLOOR_AREA).toFixed(0)} ₽/м²</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Структура затрат */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <h3 className="font-montserrat font-bold text-white text-sm mb-4">Структура затрат</h3>
+                  <div className="space-y-3">
+                    {floorItems.map((item) => {
+                      const pct = Math.round(item.total / costFloorTotal * 100);
+                      return (
+                        <div key={item.label}>
+                          <div className="flex justify-between text-xs mb-1.5">
+                            <span className="text-white/60">{item.label}</span>
+                            <span className="text-white font-semibold">{pct}%</span>
+                          </div>
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className={`h-full bg-gradient-to-r ${item.color} rounded-full`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:scale-[1.02] transition-transform shadow-lg shadow-emerald-500/25">
                     <Icon name="Download" size={15} />
                     Скачать смету PDF
                   </button>
