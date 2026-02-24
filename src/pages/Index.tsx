@@ -56,11 +56,7 @@ const BEAM_LEN = 4000; // мм
 // Периметр + внутренние пролёты обвязки (упрощённо периметр + перемычки)
 const perimeter = 2 * (FOUND_W + FOUND_L); // мм
 const perimeterM = perimeter / 1000; // м
-// Количество балок на периметр (каждая 4м)
-const beamsForPerimeter = Math.ceil(perimeterM / (BEAM_LEN / 1000));
-// Внутренние прогоны примерно 1/3 от периметра
-const beamsInner = Math.ceil(beamsForPerimeter * 0.4);
-const totalBeams = beamsForPerimeter + beamsInner;
+const totalBeams = 46;
 
 const pilePrice = 3200; // ₽ за сваю (под ключ установка)
 const beamPrice = 5800; // ₽ за брус 200×200×4000
