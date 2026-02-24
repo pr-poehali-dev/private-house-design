@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
-type Tab = "projects" | "drawings" | "calculator";
+type Tab = "projects" | "foundation" | "drawings" | "calculator";
 
 interface Project {
   id: number;
@@ -45,11 +45,48 @@ const MATERIALS = [
   { name: "Черепица керамическая", unit: "м²", rate: 1.1, price: 1850 },
 ];
 
+// Foundation data
+const PILE_DIAMETER = 108; // мм
+const PILE_COUNT = 63;
+const FOUND_W = 12200; // мм
+const FOUND_L = 16000; // мм
+const BEAM_SECTION = "200×200";
+const BEAM_LEN = 4000; // мм
+
+// Периметр + внутренние пролёты обвязки (упрощённо периметр + перемычки)
+const perimeter = 2 * (FOUND_W + FOUND_L); // мм
+const perimeterM = perimeter / 1000; // м
+// Количество балок на периметр (каждая 4м)
+const beamsForPerimeter = Math.ceil(perimeterM / (BEAM_LEN / 1000));
+// Внутренние прогоны примерно 1/3 от периметра
+const beamsInner = Math.ceil(beamsForPerimeter * 0.4);
+const totalBeams = beamsForPerimeter + beamsInner;
+
+const pilePrice = 3200; // ₽ за сваю (под ключ установка)
+const beamPrice = 5800; // ₽ за брус 200×200×4000
+const capPrice = 320;   // ₽ оголовок на сваю
+const antiCorrosionPrice = 180; // ₽ за обработку 1 сваи
+const antisepticPrice = 420; // ₽ за обработку 1 бруса
+
+const costPiles = PILE_COUNT * pilePrice;
+const costCaps = PILE_COUNT * capPrice;
+const costAntiCorrosion = PILE_COUNT * antiCorrosionPrice;
+const costBeams = totalBeams * beamPrice;
+const costAntiseptic = totalBeams * antisepticPrice;
+const costFoundTotal = costPiles + costCaps + costAntiCorrosion + costBeams + costAntiseptic;
+
+const foundationItems = [
+  { label: "Винтовые сваи Ø108мм", qty: `${PILE_COUNT} шт`, unitPrice: pilePrice, total: costPiles, icon: "Drill", color: "from-amber-400 to-orange-500" },
+  { label: "Оголовки на сваи", qty: `${PILE_COUNT} шт`, unitPrice: capPrice, total: costCaps, icon: "Layers", color: "from-sky-400 to-blue-500" },
+  { label: "Антикоррозийная обработка", qty: `${PILE_COUNT} шт`, unitPrice: antiCorrosionPrice, total: costAntiCorrosion, icon: "Shield", color: "from-emerald-400 to-teal-500" },
+  { label: `Брус ${BEAM_SECTION}×4000`, qty: `${totalBeams} шт`, unitPrice: beamPrice, total: costBeams, icon: "AlignJustify", color: "from-violet-500 to-indigo-500" },
+  { label: "Антисептик для бруса", qty: `${totalBeams} шт`, unitPrice: antisepticPrice, total: costAntiseptic, icon: "Droplets", color: "from-pink-400 to-rose-500" },
+];
+
 const statusLabel = (s: Project["status"]) => {
   const map = { planning: "Планирование", design: "Проектирование", construction: "Строительство", done: "Готово" };
   return map[s];
 };
-
 const statusColor = (s: Project["status"]) => {
   const map = {
     planning: "bg-blue-100 text-blue-700",
@@ -59,12 +96,10 @@ const statusColor = (s: Project["status"]) => {
   };
   return map[s];
 };
-
 const drawingStatusLabel = (s: Drawing["status"]) => {
   const map = { draft: "Черновик", approved: "Утверждён", revision: "На правке" };
   return map[s];
 };
-
 const drawingStatusColor = (s: Drawing["status"]) => {
   const map = {
     draft: "bg-slate-100 text-slate-600",
@@ -75,11 +110,12 @@ const drawingStatusColor = (s: Drawing["status"]) => {
 };
 
 export default function Index() {
-  const [tab, setTab] = useState<Tab>("projects");
+  const [tab, setTab] = useState<Tab>("foundation");
   const [area, setArea] = useState(150);
   const [floors, setFloors] = useState(2);
   const [hasBasement, setHasBasement] = useState(false);
   const [activeProject, setActiveProject] = useState(0);
+  const [foundSection, setFoundSection] = useState<"spec" | "estimate">("spec");
 
   const totalArea = area * floors + (hasBasement ? area * 0.8 : 0);
   const totalCost = Math.round(
@@ -88,6 +124,7 @@ export default function Index() {
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "projects", label: "Проекты", icon: "FolderOpen" },
+    { key: "foundation", label: "Фундамент", icon: "Drill" },
     { key: "drawings", label: "Чертежи", icon: "Layers" },
     { key: "calculator", label: "Калькулятор", icon: "Calculator" },
   ];
@@ -101,20 +138,20 @@ export default function Index() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
               <Icon name="Home" size={18} className="text-white" />
             </div>
-            <span className="font-montserrat font-800 text-lg tracking-tight">АрхиПроект</span>
+            <span className="font-montserrat font-black text-lg tracking-tight">АрхиПроект</span>
           </div>
-          <div className="flex items-center gap-2 bg-white/5 rounded-full px-1 py-1 border border-white/10">
+          <div className="flex items-center gap-1 bg-white/5 rounded-full px-1 py-1 border border-white/10">
             {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   tab === t.key
                     ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25"
                     : "text-white/50 hover:text-white/80"
                 }`}
               >
-                <Icon name={t.icon} size={15} />
+                <Icon name={t.icon} size={14} />
                 <span className="hidden sm:inline">{t.label}</span>
               </button>
             ))}
@@ -128,6 +165,289 @@ export default function Index() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
 
+        {/* ── FOUNDATION ── */}
+        {tab === "foundation" && (
+          <div className="animate-fade-in">
+            {/* Hero */}
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/20">
+                    Этап 1 · В работе
+                  </span>
+                </div>
+                <h1 className="font-montserrat font-black text-3xl sm:text-4xl text-white mb-2">Фундамент</h1>
+                <p className="text-white/40 text-sm">Винтовые сваи + обвязка брусом · Частный дом 150 м²</p>
+              </div>
+              <div className="hidden sm:flex gap-2">
+                <button className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                  <Icon name="Download" size={14} />
+                  Смета PDF
+                </button>
+                <button className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                  <Icon name="Share2" size={14} />
+                  Поделиться
+                </button>
+              </div>
+            </div>
+
+            {/* KPI карточки */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+              {[
+                { label: "Свай", value: `${PILE_COUNT} шт`, sub: `Ø${PILE_DIAMETER} мм`, icon: "Drill", color: "from-amber-400 to-orange-500" },
+                { label: "Фундамент", value: `${(FOUND_W/1000).toFixed(1)}×${(FOUND_L/1000).toFixed(1)} м`, sub: `${((FOUND_W/1000)*(FOUND_L/1000)).toFixed(0)} м²`, icon: "Maximize2", color: "from-violet-500 to-indigo-600" },
+                { label: "Брус обвязки", value: `${totalBeams} шт`, sub: `${BEAM_SECTION}×${BEAM_LEN} мм`, icon: "AlignJustify", color: "from-sky-400 to-blue-600" },
+                { label: "Итого бюджет", value: `${(costFoundTotal/1000).toFixed(0)} тыс`, sub: "материалы + монтаж", icon: "Wallet", color: "from-emerald-400 to-teal-600" },
+              ].map((s) => (
+                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg`}>
+                    <Icon name={s.icon} size={16} className="text-white" />
+                  </div>
+                  <div className="font-montserrat font-black text-lg text-white leading-tight">{s.value}</div>
+                  <div className="text-white/35 text-xs mt-0.5">{s.sub}</div>
+                  <div className="text-white/50 text-xs mt-1 font-medium">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabs внутри раздела */}
+            <div className="flex gap-2 mb-6">
+              {[{ key: "spec", label: "Характеристики" }, { key: "estimate", label: "Смета" }].map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => setFoundSection(s.key as "spec" | "estimate")}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    foundSection === s.key
+                      ? "bg-white/15 text-white border border-white/20"
+                      : "text-white/40 hover:text-white/70"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {foundSection === "spec" && (
+              <div className="grid lg:grid-cols-2 gap-5">
+                {/* Сваи */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                      <Icon name="Drill" size={15} className="text-white" />
+                    </div>
+                    <h2 className="font-montserrat font-bold text-white">Винтовые сваи</h2>
+                  </div>
+                  <div className="divide-y divide-white/8">
+                    {[
+                      { label: "Тип", value: "Винтовые сваи" },
+                      { label: "Диаметр трубы", value: `${PILE_DIAMETER} мм` },
+                      { label: "Количество", value: `${PILE_COUNT} шт` },
+                      { label: "Шаг установки", value: `~${((FOUND_W/1000 + FOUND_L/1000) / (PILE_COUNT / 2)).toFixed(2)} м` },
+                      { label: "Покрытие", value: "Антикоррозийный грунт" },
+                      { label: "Оголовки", value: `Приварные, ${PILE_COUNT} шт` },
+                    ].map((r) => (
+                      <div key={r.label} className="px-5 py-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                        <span className="text-sm text-white/50">{r.label}</span>
+                        <span className="text-sm font-semibold text-white">{r.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Фундамент + обвязка */}
+                <div className="space-y-5">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                        <Icon name="Maximize2" size={15} className="text-white" />
+                      </div>
+                      <h2 className="font-montserrat font-bold text-white">Габариты фундамента</h2>
+                    </div>
+                    <div className="divide-y divide-white/8">
+                      {[
+                        { label: "Ширина", value: `${(FOUND_W/1000).toFixed(2)} м (${FOUND_W} мм)` },
+                        { label: "Длина", value: `${(FOUND_L/1000).toFixed(2)} м (${FOUND_L} мм)` },
+                        { label: "Площадь", value: `${((FOUND_W/1000)*(FOUND_L/1000)).toFixed(2)} м²` },
+                        { label: "Периметр", value: `${(perimeterM).toFixed(2)} м` },
+                      ].map((r) => (
+                        <div key={r.label} className="px-5 py-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                          <span className="text-sm text-white/50">{r.label}</span>
+                          <span className="text-sm font-semibold text-white">{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center">
+                        <Icon name="AlignJustify" size={15} className="text-white" />
+                      </div>
+                      <h2 className="font-montserrat font-bold text-white">Обвязка брусом</h2>
+                    </div>
+                    <div className="divide-y divide-white/8">
+                      {[
+                        { label: "Сечение бруса", value: `${BEAM_SECTION} мм` },
+                        { label: "Длина хлыста", value: `${BEAM_LEN} мм (4 м)` },
+                        { label: "Количество", value: `${totalBeams} шт` },
+                        { label: "Объём", value: `${((0.2*0.2*BEAM_LEN/1000)*totalBeams).toFixed(2)} м³` },
+                        { label: "Обработка", value: "Антисептик + огнебиозащита" },
+                        { label: "Крепление", value: "Болтовое к оголовку" },
+                      ].map((r) => (
+                        <div key={r.label} className="px-5 py-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                          <span className="text-sm text-white/50">{r.label}</span>
+                          <span className="text-sm font-semibold text-white">{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Схема фундамента — визуализация */}
+                <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <h2 className="font-montserrat font-bold text-white mb-4 text-sm">Схема расположения свай</h2>
+                  <div className="relative bg-[#0a0a10] rounded-xl border border-white/10 overflow-hidden" style={{ height: 260 }}>
+                    {/* Сетка */}
+                    <div className="absolute inset-0 opacity-5" style={{
+                      backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+                      backgroundSize: "20px 20px"
+                    }} />
+                    {/* Периметр фундамента */}
+                    <svg width="100%" height="100%" viewBox="0 0 640 260" className="absolute inset-0">
+                      {/* Фундамент */}
+                      <rect x="60" y="30" width="520" height="200" fill="none" stroke="rgba(139,92,246,0.4)" strokeWidth="2" strokeDasharray="6,3" rx="2"/>
+                      {/* Размеры */}
+                      <text x="320" y="18" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11" fontFamily="Golos Text">16 000 мм</text>
+                      <text x="28" y="135" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11" fontFamily="Golos Text" transform="rotate(-90,28,135)">12 200 мм</text>
+                      {/* Периметральные сваи по углам и краям */}
+                      {[
+                        [60,30],[204,30],[348,30],[492,30],[580,30],
+                        [60,97],[580,97],
+                        [60,163],[580,163],
+                        [60,230],[204,230],[348,230],[492,230],[580,230],
+                        [204,97],[348,97],[492,97],
+                        [204,163],[348,163],[492,163],
+                        [132,30],[276,30],[420,30],[556,30],
+                        [132,230],[276,230],[420,230],[556,230],
+                        [60,64],[60,130],[60,196],
+                        [580,64],[580,130],[580,196],
+                        [132,97],[276,97],[420,97],[556,97],
+                        [132,163],[276,163],[420,163],[556,163],
+                        [132,130],[276,130],[420,130],[556,130],
+                        [204,130],[348,130],[492,130],
+                      ].slice(0, PILE_COUNT).map(([cx, cy], i) => (
+                        <g key={i}>
+                          <circle cx={cx} cy={cy} r="7" fill="rgba(251,191,36,0.9)" stroke="rgba(251,191,36,0.3)" strokeWidth="3"/>
+                          <circle cx={cx} cy={cy} r="3" fill="#fff" opacity="0.9"/>
+                        </g>
+                      ))}
+                      {/* Обвязка периметр */}
+                      <rect x="60" y="30" width="520" height="200" fill="none" stroke="rgba(56,189,248,0.6)" strokeWidth="3" rx="2"/>
+                      {/* Прогоны */}
+                      <line x1="60" y1="130" x2="580" y2="130" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
+                      <line x1="204" y1="30" x2="204" y2="230" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
+                      <line x1="348" y1="30" x2="348" y2="230" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
+                      <line x1="492" y1="30" x2="492" y2="230" stroke="rgba(56,189,248,0.4)" strokeWidth="2" strokeDasharray="4,2"/>
+                    </svg>
+                    {/* Легенда */}
+                    <div className="absolute bottom-3 right-4 flex items-center gap-4 text-xs text-white/40">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-amber-400"/>
+                        <span>Свая Ø108</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-0.5 bg-sky-400"/>
+                        <span>Брус 200×200</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {foundSection === "estimate" && (
+              <div className="space-y-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10">
+                    <h2 className="font-montserrat font-bold text-white">Сводная смета · Фундамент</h2>
+                  </div>
+                  <div className="divide-y divide-white/8">
+                    {foundationItems.map((item) => (
+                      <div key={item.label} className="px-5 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors">
+                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center shrink-0 shadow-md`}>
+                          <Icon name={item.icon} size={15} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white">{item.label}</div>
+                          <div className="text-xs text-white/40 mt-0.5">
+                            {item.qty} · {item.unitPrice.toLocaleString("ru-RU")} ₽/шт
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="font-montserrat font-bold text-white">
+                            {(item.total / 1000).toFixed(1)} тыс. ₽
+                          </div>
+                          <div className="text-xs text-white/30 mt-0.5">
+                            {Math.round(item.total / costFoundTotal * 100)}%
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Итого */}
+                  <div className="px-5 py-4 bg-gradient-to-r from-violet-500/10 to-indigo-500/5 border-t border-violet-500/20 flex items-center justify-between">
+                    <div>
+                      <div className="font-montserrat font-black text-white text-lg">ИТОГО</div>
+                      <div className="text-xs text-white/40 mt-0.5">Все работы и материалы</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-montserrat font-black text-2xl text-white">
+                        {(costFoundTotal / 1000).toFixed(0)} <span className="text-base text-white/50">тыс. ₽</span>
+                      </div>
+                      <div className="text-xs text-white/30 mt-0.5">≈ {(costFoundTotal / ((FOUND_W/1000)*(FOUND_L/1000))).toFixed(0)} ₽/м²</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Доли в графике */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <h3 className="font-montserrat font-bold text-white text-sm mb-4">Структура затрат</h3>
+                  <div className="space-y-3">
+                    {foundationItems.map((item) => {
+                      const pct = Math.round(item.total / costFoundTotal * 100);
+                      return (
+                        <div key={item.label}>
+                          <div className="flex justify-between text-xs mb-1.5">
+                            <span className="text-white/60">{item.label}</span>
+                            <span className="text-white font-semibold">{pct}%</span>
+                          </div>
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-700`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 text-white font-semibold text-sm hover:scale-[1.02] transition-transform shadow-lg shadow-violet-500/25">
+                    <Icon name="Download" size={15} />
+                    Скачать смету PDF
+                  </button>
+                  <button className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white/90 hover:bg-white/10 text-sm transition-all">
+                    <Icon name="Pencil" size={15} />
+                    Редактировать
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── PROJECTS ── */}
         {tab === "projects" && (
           <div className="animate-fade-in">
@@ -135,8 +455,6 @@ export default function Index() {
               <h1 className="font-montserrat font-black text-3xl sm:text-4xl text-white mb-2">Мои проекты</h1>
               <p className="text-white/40 text-sm">Управляйте всеми этапами проектирования</p>
             </div>
-
-            {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
                 { label: "Всего проектов", value: "3", icon: "FolderOpen", color: "from-violet-500 to-indigo-600" },
@@ -144,7 +462,7 @@ export default function Index() {
                 { label: "Чертежей", value: "24", icon: "FileText", color: "from-sky-400 to-blue-600" },
                 { label: "Общая площадь", value: "450 м²", icon: "Maximize2", color: "from-emerald-400 to-teal-600" },
               ].map((s) => (
-                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/8 transition-colors">
+                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
                   <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg`}>
                     <Icon name={s.icon} size={16} className="text-white" />
                   </div>
@@ -153,8 +471,6 @@ export default function Index() {
                 </div>
               ))}
             </div>
-
-            {/* Project cards */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {PROJECTS.map((p, i) => (
                 <div
@@ -182,16 +498,11 @@ export default function Index() {
                       <span className="text-white font-semibold">{p.progress}%</span>
                     </div>
                     <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-violet-500 to-indigo-400 rounded-full transition-all duration-700"
-                        style={{ width: `${p.progress}%` }}
-                      />
+                      <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-400 rounded-full" style={{ width: `${p.progress}%` }} />
                     </div>
                   </div>
                 </div>
               ))}
-
-              {/* Add new project */}
               <button className="rounded-2xl border-2 border-dashed border-white/15 p-5 flex flex-col items-center justify-center gap-3 text-white/30 hover:text-white/60 hover:border-white/30 transition-all duration-200 min-h-[180px]">
                 <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-current flex items-center justify-center">
                   <Icon name="Plus" size={20} />
@@ -199,13 +510,11 @@ export default function Index() {
                 <span className="text-sm font-medium">Добавить проект</span>
               </button>
             </div>
-
-            {/* Active project detail */}
             <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-montserrat font-bold text-white">{PROJECTS[activeProject].name}</h2>
                 <div className="flex gap-2">
-                  {["Описание", "Команда", "Документы", "История"].map((label) => (
+                  {["Описание", "Команда", "Документы"].map((label) => (
                     <button key={label} className="text-xs text-white/40 hover:text-white/80 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                       {label}
                     </button>
@@ -246,33 +555,18 @@ export default function Index() {
                 Загрузить
               </button>
             </div>
-
-            {/* Filters */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
               {["Все", "Генплан", "Архитектура", "Конструктив", "Фасады"].map((f) => (
-                <button
-                  key={f}
-                  className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    f === "Все"
-                      ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25"
-                      : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 border border-white/10"
-                  }`}
-                >
+                <button key={f} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${f === "Все" ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 border border-white/10"}`}>
                   {f}
                 </button>
               ))}
             </div>
-
-            {/* Drawings grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {DRAWINGS.map((d) => (
                 <div key={d.id} className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-violet-500/40 hover:shadow-xl hover:shadow-violet-500/5 transition-all duration-300 cursor-pointer">
-                  {/* Preview area */}
                   <div className="h-40 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-white/10 flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-10" style={{
-                      backgroundImage: "linear-gradient(rgba(139,92,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.3) 1px, transparent 1px)",
-                      backgroundSize: "24px 24px"
-                    }} />
+                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(rgba(139,92,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.3) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
                     <div className="relative flex flex-col items-center gap-2 text-white/20 group-hover:text-violet-400/60 transition-colors">
                       <Icon name="FileText" size={36} />
                       <span className="text-xs font-medium">{d.type}</span>
@@ -289,9 +583,7 @@ export default function Index() {
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h3 className="font-semibold text-sm text-white leading-snug">{d.title}</h3>
-                      <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${drawingStatusColor(d.status)}`}>
-                        {drawingStatusLabel(d.status)}
-                      </span>
+                      <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${drawingStatusColor(d.status)}`}>{drawingStatusLabel(d.status)}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-white/40">
                       <span>{d.floor > 0 ? `${d.floor}-й этаж` : d.type}</span>
@@ -300,8 +592,7 @@ export default function Index() {
                   </div>
                 </div>
               ))}
-
-              <button className="rounded-2xl border-2 border-dashed border-white/15 flex flex-col items-center justify-center gap-3 text-white/30 hover:text-white/60 hover:border-white/30 transition-all duration-200 min-h-[240px]">
+              <button className="rounded-2xl border-2 border-dashed border-white/15 flex flex-col items-center justify-center gap-3 text-white/30 hover:text-white/60 hover:border-white/30 transition-all min-h-[240px]">
                 <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-current flex items-center justify-center">
                   <Icon name="Plus" size={20} />
                 </div>
@@ -318,28 +609,18 @@ export default function Index() {
               <h1 className="font-montserrat font-black text-3xl sm:text-4xl text-white mb-2">Калькулятор</h1>
               <p className="text-white/40 text-sm">Расчёт материалов и бюджета проекта</p>
             </div>
-
             <div className="grid lg:grid-cols-5 gap-6">
-              {/* Controls */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-5">
                   <h2 className="font-montserrat font-bold text-white text-sm uppercase tracking-wider opacity-50">Параметры дома</h2>
-
                   <div>
                     <div className="flex justify-between mb-3">
                       <label className="text-sm text-white/70">Площадь этажа</label>
                       <span className="font-montserrat font-bold text-white">{area} м²</span>
                     </div>
-                    <input
-                      type="range" min={50} max={500} step={5} value={area}
-                      onChange={(e) => setArea(+e.target.value)}
-                      className="w-full h-1.5 rounded-full accent-violet-500 bg-white/15 cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-white/25 mt-1.5">
-                      <span>50 м²</span><span>500 м²</span>
-                    </div>
+                    <input type="range" min={50} max={500} step={5} value={area} onChange={(e) => setArea(+e.target.value)} className="w-full h-1.5 rounded-full accent-violet-500 bg-white/15 cursor-pointer" />
+                    <div className="flex justify-between text-xs text-white/25 mt-1.5"><span>50 м²</span><span>500 м²</span></div>
                   </div>
-
                   <div>
                     <div className="flex justify-between mb-3">
                       <label className="text-sm text-white/70">Количество этажей</label>
@@ -347,31 +628,18 @@ export default function Index() {
                     </div>
                     <div className="flex gap-2">
                       {[1, 2, 3].map((n) => (
-                        <button
-                          key={n}
-                          onClick={() => setFloors(n)}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                            floors === n
-                              ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25"
-                              : "bg-white/8 text-white/50 hover:bg-white/15 border border-white/10"
-                          }`}
-                        >
+                        <button key={n} onClick={() => setFloors(n)} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${floors === n ? "bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg shadow-violet-500/25" : "bg-white/8 text-white/50 hover:bg-white/15 border border-white/10"}`}>
                           {n} {n === 1 ? "этаж" : "этажа"}
                         </button>
                       ))}
                     </div>
                   </div>
-
                   <div className="flex items-center justify-between">
                     <label className="text-sm text-white/70">Цокольный этаж</label>
-                    <button
-                      onClick={() => setHasBasement(!hasBasement)}
-                      className={`w-12 h-6 rounded-full transition-all duration-300 relative ${hasBasement ? "bg-violet-500" : "bg-white/15"}`}
-                    >
+                    <button onClick={() => setHasBasement(!hasBasement)} className={`w-12 h-6 rounded-full transition-all duration-300 relative ${hasBasement ? "bg-violet-500" : "bg-white/15"}`}>
                       <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${hasBasement ? "left-7" : "left-1"}`} />
                     </button>
                   </div>
-
                   <div className="pt-2 border-t border-white/10">
                     <div className="flex justify-between text-sm">
                       <span className="text-white/50">Общая площадь</span>
@@ -379,8 +647,6 @@ export default function Index() {
                     </div>
                   </div>
                 </div>
-
-                {/* Total budget */}
                 <div className="bg-gradient-to-br from-violet-500/20 to-indigo-500/10 border border-violet-500/30 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-1">
                     <Icon name="TrendingUp" size={16} className="text-violet-400" />
@@ -392,8 +658,6 @@ export default function Index() {
                   <p className="text-xs text-white/30 mt-2">* Ориентировочная стоимость материалов без работы</p>
                 </div>
               </div>
-
-              {/* Materials table */}
               <div className="lg:col-span-3">
                 <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
                   <div className="px-5 py-4 border-b border-white/10">
@@ -412,14 +676,9 @@ export default function Index() {
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-violet-500 to-indigo-400 rounded-full"
-                                style={{ width: `${pct}%` }}
-                              />
+                              <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-400 rounded-full" style={{ width: `${pct}%` }} />
                             </div>
-                            <span className="text-xs text-white/35 w-28 text-right shrink-0">
-                              {qty.toLocaleString("ru-RU")} {m.unit}
-                            </span>
+                            <span className="text-xs text-white/35 w-28 text-right shrink-0">{qty.toLocaleString("ru-RU")} {m.unit}</span>
                           </div>
                         </div>
                       );
