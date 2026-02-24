@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
-type Tab = "projects" | "foundation" | "floor" | "drawings" | "calculator";
+type Tab = "projects" | "layout" | "foundation" | "floor" | "drawings" | "calculator";
 
 interface Project {
   id: number;
@@ -176,6 +176,7 @@ export default function Index() {
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "projects", label: "Проекты", icon: "FolderOpen" },
+    { key: "layout", label: "Планировка", icon: "LayoutDashboard" },
     { key: "foundation", label: "Фундамент", icon: "Drill" },
     { key: "floor", label: "Перекрытие", icon: "Layers" },
     { key: "drawings", label: "Чертежи", icon: "FileText" },
@@ -563,6 +564,142 @@ export default function Index() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── LAYOUT ── */}
+        {tab === "layout" && (
+          <div className="animate-fade-in">
+            {/* Hero */}
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-sky-400/15 text-sky-400 border border-sky-400/20">
+                    Планировка · 1 этаж
+                  </span>
+                </div>
+                <h1 className="font-montserrat font-black text-3xl sm:text-4xl text-white mb-2">Планировка дома</h1>
+                <p className="text-white/40 text-sm">Частный дом 150 м² · Брусовые стены · Терраса</p>
+              </div>
+              <div className="hidden sm:flex gap-2">
+                <button className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                  <Icon name="Download" size={14} />
+                  Скачать план
+                </button>
+              </div>
+            </div>
+
+            {/* KPI */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+              {[
+                { label: "Общая площадь", value: "150 м²", sub: "жилая + терраса", icon: "Maximize2", color: "from-sky-400 to-blue-600" },
+                { label: "Комнат", value: "4 шт", sub: "спальни + гостиная", icon: "LayoutDashboard", color: "from-violet-500 to-indigo-600" },
+                { label: "Санузлов", value: "1 шт", sub: "совмещённый", icon: "Droplets", color: "from-teal-400 to-cyan-500" },
+                { label: "Терраса", value: "~30 м²", sub: "открытая", icon: "Sun", color: "from-amber-400 to-orange-500" },
+              ].map((s) => (
+                <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg`}>
+                    <Icon name={s.icon} size={16} className="text-white" />
+                  </div>
+                  <div className="font-montserrat font-black text-lg text-white leading-tight">{s.value}</div>
+                  <div className="text-white/35 text-xs mt-0.5">{s.sub}</div>
+                  <div className="text-white/50 text-xs mt-1 font-medium">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid lg:grid-cols-5 gap-5">
+              {/* 3D изображение планировки */}
+              <div className="lg:col-span-3 bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center">
+                      <Icon name="Box" size={15} className="text-white" />
+                    </div>
+                    <h2 className="font-montserrat font-bold text-white">3D-планировка</h2>
+                  </div>
+                  <span className="text-xs text-white/30">Вид сверху-сбоку</span>
+                </div>
+                <div className="relative bg-[#e8e0d5]" style={{ minHeight: 360 }}>
+                  <img
+                    src="https://cdn.poehali.dev/projects/75d8d3b6-9d84-45ae-8d66-b450d080d926/bucket/fbb2ffed-2230-4b84-be45-b71fade06daf.png"
+                    alt="Планировка дома 3D"
+                    className="w-full h-full object-contain"
+                    style={{ minHeight: 360 }}
+                  />
+                  {/* Подписи помещений overlay */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                    {[
+                      { name: "Спальня 1", color: "bg-violet-500/80" },
+                      { name: "Спальня 2", color: "bg-indigo-500/80" },
+                      { name: "Гостиная", color: "bg-sky-500/80" },
+                      { name: "Терраса", color: "bg-amber-500/80" },
+                    ].map((r) => (
+                      <div key={r.name} className={`${r.color} backdrop-blur text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow`}>
+                        {r.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Список помещений */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                      <Icon name="LayoutDashboard" size={15} className="text-white" />
+                    </div>
+                    <h2 className="font-montserrat font-bold text-white">Помещения</h2>
+                  </div>
+                  <div className="divide-y divide-white/8">
+                    {[
+                      { name: "Гостиная / кухня", area: 42, icon: "Sofa", color: "text-sky-400" },
+                      { name: "Спальня 1 (мастер)", area: 22, icon: "BedDouble", color: "text-violet-400" },
+                      { name: "Спальня 2", area: 18, icon: "BedSingle", color: "text-indigo-400" },
+                      { name: "Спальня 3", area: 16, icon: "BedSingle", color: "text-blue-400" },
+                      { name: "Санузел", area: 8, icon: "Droplets", color: "text-teal-400" },
+                      { name: "Коридор / холл", area: 14, icon: "ArrowRight", color: "text-white/40" },
+                      { name: "Терраса (открытая)", area: 30, icon: "Sun", color: "text-amber-400" },
+                    ].map((r) => (
+                      <div key={r.name} className="px-5 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors">
+                        <Icon name={r.icon} size={16} className={r.color} />
+                        <span className="text-sm text-white flex-1">{r.name}</span>
+                        <span className="font-montserrat font-bold text-white text-sm">{r.area} м²</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Итого */}
+                  <div className="px-5 py-3 bg-white/5 border-t border-white/10 flex justify-between items-center">
+                    <span className="text-sm text-white/50 font-medium">Итого</span>
+                    <span className="font-montserrat font-black text-white">150 м²</span>
+                  </div>
+                </div>
+
+                {/* Характеристики стен */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                      <Icon name="Home" size={15} className="text-white" />
+                    </div>
+                    <h2 className="font-montserrat font-bold text-white">Стены</h2>
+                  </div>
+                  <div className="divide-y divide-white/8">
+                    {[
+                      { label: "Материал", value: "Профилированный брус" },
+                      { label: "Сечение", value: "200×200 мм" },
+                      { label: "Высота потолков", value: "2.7 м" },
+                      { label: "Перегородки", value: "Брус 100×150 мм" },
+                    ].map((r) => (
+                      <div key={r.label} className="px-5 py-3 flex justify-between items-center hover:bg-white/5 transition-colors">
+                        <span className="text-sm text-white/50">{r.label}</span>
+                        <span className="text-sm font-semibold text-white">{r.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
